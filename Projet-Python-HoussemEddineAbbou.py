@@ -1,6 +1,11 @@
 import cowsay
 import re
+import stdiomask
 
+
+#---------------------------------------------------------------------------------#
+#                                  1- Enregistrement                              # 
+#---------------------------------------------------------------------------------#
 def enterEmail():
     while True:
         email = input("Enter your email: ")
@@ -9,6 +14,22 @@ def enterEmail():
         if re.fullmatch(emailPattern, email):
             return email
         cowsay.cow("Invalid email")
+
+
+def enterPassword():
+    while True:
+        #password = getpass.getpass("Enter your password:")
+        password = stdiomask.getpass("Enter your password:")
+
+        passwordPattern = re.compile(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&+=!])(.{8,})$')
+        if re.fullmatch(passwordPattern, password):
+            return password
+        cowsay.cow("Invalid password, please follow the password requirements:\n"
+              "- At least one uppercase letter (A-Z)\n"
+              "- At least one lowercase letter (a-z)\n"
+              "- At least one digit (0-9)\n"
+              "- At least one special character from [@#$%^&+=!]\n"
+              "- Minimum length of 8 characters")
 
 #---------------------------------------------------------------------------------#
 #                                   MAIN                                          # 
@@ -22,7 +43,9 @@ def main():
         choice = input("Choose option: ")
         if choice == "1":
             email = enterEmail()
+            password = enterPassword()
             print(email) 
+            print(password)
         elif choice == "2":
             cowsay.cow("Option 2")
         else:

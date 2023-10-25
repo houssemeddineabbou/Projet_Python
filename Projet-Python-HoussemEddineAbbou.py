@@ -30,6 +30,11 @@ def enterPassword():
               "- At least one digit (0-9)\n"
               "- At least one special character from [@#$%^&+=!]\n"
               "- Minimum length of 8 characters")
+        
+
+def saveCredentials(email, password):
+    with open("Enregistrement.txt", "a") as file:
+        file.write(f"{email}|{password}\n")
 
 #---------------------------------------------------------------------------------#
 #                                   MAIN                                          # 
@@ -44,10 +49,10 @@ def main():
         if choice == "1":
             email = enterEmail()
             password = enterPassword()
-            print(email) 
-            print(password)
+            saveCredentials(email, password)
+            cowsay.cow("Registration done")
         elif choice == "2":
-            cowsay.cow("Option 2")
+            cowsay.cow("Option 2 : working on it")
         else:
             cowsay.cow("Invalid choice")
 

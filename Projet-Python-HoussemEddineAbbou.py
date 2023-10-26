@@ -3,6 +3,14 @@ import re
 import stdiomask
 import hashlib
 import bcrypt
+import time
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.exceptions import InvalidSignature
 
 
 #---------------------------------------------------------------------------------#
@@ -65,11 +73,11 @@ def showMenuAuthenticated():
         if choice == "A":
             invisibileMode()
         elif choice == "B":
-            print("Your choice is B")
+            rsaEncryption()
         elif choice == "C":
             print("Your choice is C")
         elif choice == "D":
-            cowsay.cow("Merci pour votre attention moooo KEKW")
+            cowsay.cow("THANK YOU FOR YOUR ATTENTION !")
             exit(0)
         else:
             cowsay.cow("Invalid choice")
@@ -90,18 +98,133 @@ def invisibileMode():
             textSHA256 = input("Enter the text to hash using SHA-256: ")
             sha256Hash = hashlib.sha256(textSHA256.encode()).hexdigest()
             print("SHA-256 Hash:", sha256Hash)
+
         elif choice == "b":
             textBcrypt = input("Enter the text to hash using bcrypt with salt: ")
             salt = bcrypt.gensalt()
             bcryptHash = bcrypt.hashpw(textBcrypt.encode(), salt)
             print("Salted Hash (bcrypt):", bcryptHash)
+
         elif choice == "c":
             word = input("Type a word to perform a dictionary attack: ")
-            print("Dictionary attack")
+            
+            with open('wordlist.txt', 'r') as file:
+                list = [line.strip() for line in file]
+            print("Performing dictionary attack...")
+
+            for i in range(4):
+                print("." * (i + 1), end='', flush=True) 
+                time.sleep(1)
+            
+            print("\n")
+
+            found = False
+            for i in list:
+                if word == i:
+                    print("The word",word,"you entered has been attacked by the dictionary")
+                    found = True
+                    break
+
+            if not found:
+                print("The word",word,"you entered is a STRONG one GG")
+
         elif choice == "d":
             return
         else:
             print("Invalid choice")
+
+#---------------------------------------------------------------------------------#
+#                            B- Chiffrement (RSA)                                 # 
+#---------------------------------------------------------------------------------#
+
+def generateKeys():
+    privateKey = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend()
+    )
+
+    privateKeyPem = privateKey.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
+    publicKeyPem = privateKey.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    with open("private_key.pem", "wb") as privateKeyFile:
+        privateKeyFile.write(privateKeyPem)
+    with open("public_key.pem", "wb") as publicKeyFile:
+        publicKeyFile.write(publicKeyPem)
+
+    print("RSA key pair generated and saved to private_key.pem and public_key.pem")
+
+def openPublicKey():
+    try:
+        with open("public_key.pem", "rb") as publicKeyFile:
+            publicKey = serialization.load_pem_public_key(
+                publicKeyFile.read(),
+                backend=default_backend()
+            )
+        return publicKey
+    except FileNotFoundError:
+        print("File not found")
+
+def openPrivateKey():
+    try:
+        with open("private_key.pem", "rb") as privateKeyFile:
+            privateKey = serialization.load_pem_private_key(
+                privateKeyFile.read(),
+                password=None
+            )
+        return privateKey
+    except FileNotFoundError:
+        print("File not found")
+
+def rsaEncryption():
+    while True:
+        cowsay.cow("a- Generate RSA key pairs and save them \n"
+                   "b- Encrypt a message with RSA\n"
+                   "c- Decrypt the encrypted message\n"
+                   "f- Return to the main menu")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "a":
+            generateKeys()
+
+        elif choice == "b":
+            msg = input("Enter the message to encrypt: ")
+            encryptedMsg = openPublicKey().encrypt(
+                msg.encode("utf-8"),
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+            print("Encrypted message:",encryptedMsg.hex())
+
+        elif choice == "c":
+            encryptedMsg = input("Enter the encrypted message (in hexadecimal): ")
+            msg = bytes.fromhex(encryptedMsg)
+            decryptedMsg = openPrivateKey().decrypt(
+                msg,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+            print("Decrypted message:", decryptedMsg.decode())
+
+        elif choice == "f":
+            return
+        else:
+            cowsay.cow("Invalid choice")
 
 #---------------------------------------------------------------------------------#
 #                                   MAIN                                          # 
@@ -130,4 +253,4 @@ def main():
             cowsay.cow("Invalid choice")
 
 if __name__ == "__main__":
-    main()
+   main()

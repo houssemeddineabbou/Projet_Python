@@ -189,6 +189,8 @@ def rsaEncryption():
         cowsay.cow("a- Generate RSA key pairs and save them \n"
                    "b- Encrypt a message with RSA\n"
                    "c- Decrypt the encrypted message\n"
+                   "d- Sign a message with RSA\n"
+                   "e- Verify the message signature\n"
                    "f- Return to the main menu")
 
         choice = input("Enter your choice: ")
@@ -220,6 +222,36 @@ def rsaEncryption():
                 )
             )
             print("Decrypted message:", decryptedMsg.decode())
+
+        elif choice == "d":
+            message = input("Enter the message to sign: ")
+            signature = openPrivateKey().sign(
+                message.encode("utf-8"),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            print("Signature:",signature.hex())
+        elif choice == "e":
+            message = input("Enter the message to verify: ")
+            signature_hex = input("Enter the signature to verify (in hexadecimal): ")
+            signature = bytes.fromhex(signature_hex)
+            
+            try:
+                openPublicKey().verify(
+                    signature,
+                    message.encode("utf-8"),
+                    padding.PSS(
+                        mgf=padding.MGF1(hashes.SHA256()),
+                        salt_length=padding.PSS.MAX_LENGTH
+                    ),
+                    hashes.SHA256()
+                )
+                print("Signature is valid")
+            except InvalidSignature:
+                print("Signature is invalid")
 
         elif choice == "f":
             return

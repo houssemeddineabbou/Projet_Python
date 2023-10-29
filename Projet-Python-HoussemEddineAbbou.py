@@ -344,7 +344,7 @@ def rsaCertificate():
 #                                   MAIN                                          # 
 #---------------------------------------------------------------------------------#
 def main():
-    print("Welcome to Houssem's project")
+    print("WELCOME TO HOUSSEM'S PROJECT")
     while True:
         cowsay.cow("1. Register \n"
                    "2. Authenticate")

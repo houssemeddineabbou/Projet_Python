@@ -11,6 +11,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.exceptions import InvalidSignature
+from cryptography import x509
+import datetime
 
 
 #---------------------------------------------------------------------------------#
@@ -23,7 +25,12 @@ def enterEmail():
         emailPattern = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
         if re.fullmatch(emailPattern, email):
             return email
-        cowsay.cow("Invalid email")
+        cowsay.cow("Invalid email, please follow the email requirements:\n"
+      "- Must contain one or more lowercase letters, uppercase letters, or digits\n"
+      "- Can include (.), (-), or (_) before @ symbol\n"
+      "- Must have the @ symbol\n"
+      "- Must have a domain \n"
+      "- Must have a valid top-level domain with at least two characters")
 
 
 def enterPassword():
@@ -75,7 +82,7 @@ def showMenuAuthenticated():
         elif choice == "B":
             rsaEncryption()
         elif choice == "C":
-            print("Your choice is C")
+            rsaCertificate()
         elif choice == "D":
             cowsay.cow("THANK YOU FOR YOUR ATTENTION !")
             exit(0)
@@ -136,7 +143,6 @@ def invisibileMode():
 #---------------------------------------------------------------------------------#
 #                            B- Chiffrement (RSA)                                 # 
 #---------------------------------------------------------------------------------#
-
 def generateKeys():
     privateKey = rsa.generate_private_key(
         public_exponent=65537,
@@ -236,8 +242,8 @@ def rsaEncryption():
             print("Signature:",signature.hex())
         elif choice == "e":
             message = input("Enter the message to verify: ")
-            signature_hex = input("Enter the signature to verify (in hexadecimal): ")
-            signature = bytes.fromhex(signature_hex)
+            signatureHex = input("Enter the signature to verify (in hexadecimal): ")
+            signature = bytes.fromhex(signatureHex)
             
             try:
                 openPublicKey().verify(
@@ -254,6 +260,82 @@ def rsaEncryption():
                 print("Signature is invalid")
 
         elif choice == "f":
+            return
+        else:
+            cowsay.cow("Invalid choice")
+
+#---------------------------------------------------------------------------------#
+#                            C- Certificat (RSA)                                  # 
+#---------------------------------------------------------------------------------#
+
+def getCustomAttributes():
+    country_name = input("Enter the Country Name (TN): ") or "TN"
+    state_name = input("Enter the State or Province Name (Manouba): ") or "Manouba"
+    locality_name = input("Enter City Name (Oued Elil): ") or "Oued Elil"
+    organization_name = input("Enter the Organization Name (TEKUP): ") or "TEKUP"
+    common_name = input("Enter the Common Name (SSIR): ") or "SSIR"
+    attributes = [
+        x509.NameAttribute(x509.NameOID.COUNTRY_NAME, country_name),
+        x509.NameAttribute(x509.NameOID.STATE_OR_PROVINCE_NAME, state_name),
+        x509.NameAttribute(x509.NameOID.LOCALITY_NAME, locality_name),
+        x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, organization_name),
+        x509.NameAttribute(x509.NameOID.COMMON_NAME, common_name),
+    ]
+    return attributes
+
+def openCertificate():
+    try:
+        with open("self_signed_certificate.pem", "rb") as certificate_file:
+            certificate = x509.load_pem_x509_certificate(certificate_file.read(), default_backend())
+        return certificate
+    except FileNotFoundError:
+        print("File not found")
+
+def rsaCertificate():
+    while True:
+        cowsay.cow("a- Generate RSA key pairs and save them \n"
+                   "b- Generate a self-signed certificate by RSA\n"
+                   "c- Encrypt a message using this certificate\n"
+                   "d- Return to the main menu")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "a":
+            generateKeys()
+        elif choice == "b":
+            attributes = getCustomAttributes()
+            subject = x509.Name(attributes)
+            certificate = x509.CertificateBuilder().subject_name(
+                subject
+            ).issuer_name(
+                subject
+            ).public_key(
+                openPrivateKey().public_key()
+            ).serial_number(
+                x509.random_serial_number()
+            ).not_valid_before(
+                datetime.datetime.utcnow()
+            ).not_valid_after(
+                datetime.datetime.utcnow() + datetime.timedelta(days=365)
+            ).sign(openPrivateKey(), hashes.SHA256(), default_backend())
+
+            with open("self_signed_certificate.pem", "wb") as certificate_file:
+                certificate_file.write(certificate.public_bytes(serialization.Encoding.PEM))
+            
+            print("Self-signed certificate generated and saved to self_signed_certificate.pem")
+        elif choice == "c":
+            message = input("Enter the message to encrypt: ")
+            
+            encrypted = openCertificate().public_key().encrypt(
+                message.encode("utf-8"),
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+            print("Encrypted message:",encrypted.hex())
+        elif choice == "d":
             return
         else:
             cowsay.cow("Invalid choice")
